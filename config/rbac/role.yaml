@@ -1,0 +1,43 @@
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: manager-role
+rules:
+- apiGroups:
+  - ""
+  resources:
+  - secrets
+  verbs:
+  - get
+  - list
+  - watch
+- apiGroups:
+  - external-postgres.boraxhacker
+  resources:
+  - postgresdatabases
+  - postgresinstances
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - external-postgres.boraxhacker
+  resources:
+  - postgresdatabases/finalizers
+  - postgresinstances/finalizers
+  verbs:
+  - update
+- apiGroups:
+  - external-postgres.boraxhacker
+  resources:
+  - postgresdatabases/status
+  - postgresinstances/status
+  verbs:
+  - get
+  - patch
+  - update

@@ -1,0 +1,16 @@
+apiVersion: external-postgres.boraxhacker/v1beta1
+kind: PostgresDatabase
+metadata:
+  labels:
+    app.kubernetes.io/name: external-postgres
+    app.kubernetes.io/managed-by: kustomize
+  name: postgresdatabase-sample
+spec:
+  instanceRef: postgresinstance-sample
+  databaseName:
+    value: database_sample
+  ownerRoleName:
+    value: role_sample
+  ownerPassword:
+    value: MYREALLYBADPASSWORD
+

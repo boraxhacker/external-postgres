@@ -1,0 +1,89 @@
+name: Build and Release
+on:
+  push:
+    tags: [ "v*" ]
+
+jobs:
+  build_and_push:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      packages: write
+    steps:
+      - name: GitHub Actions environment variables
+        run: printenv | sort
+
+      - name: Clone
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+
+      - name: Build
+        id: build
+        run: |
+          make build
+          make build-installer
+
+          echo "artifact1_path=./bin/manager" >> $GITHUB_OUTPUT
+          echo "artifact1_name=external-postgres-controller-manager" >> $GITHUB_OUTPUT 
+          echo "artifact2_path=./dist/install.yaml" >> $GITHUB_OUTPUT
+          echo "artifact2_name=external-postgres.yaml" >> $GITHUB_OUTPUT 
+
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and tag Docker image
+        id: docker_build
+        run: |
+          IMAGE_TAG="ghcr.io/${{ github.repository }}:${{ github.ref_name }}"
+          IMAGE_TAG=$(echo $IMAGE_TAG | tr '[:upper:]' '[:lower:]')
+
+          echo "Building image: $IMAGE_TAG"
+          docker buildx build --tag $IMAGE_TAG .
+          
+          # Set the image tag as an output
+          echo "image_tag=$IMAGE_TAG" >> $GITHUB_OUTPUT
+
+      - name: Push Docker image to Container Registry
+        run: docker push ${{ steps.docker_build.outputs.image_tag }}
+
+      - name: Create GitHub Release
+        id: create_release
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: ${{ github.ref_name }}
+          release_name: Release ${{ github.ref_name }}
+          body: |
+            Release based on tag ${{ github.ref_name }}.
+            Docker Image: `${{ steps.docker_build.outputs.image_tag }}`
+          draft: false
+          prerelease: false
+
+      - name: Upload controller-manager Release Asset
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ${{ steps.build.outputs.artifact1_path }}
+          asset_name: ${{ steps.build.outputs.artifact1_name }}
+          asset_content_type: application/octet-stream
+
+      - name: Upload external-postgres.yaml Release Asset
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ${{ steps.build.outputs.artifact2_path }}
+          asset_name: ${{ steps.build.outputs.artifact2_name }}
+          asset_content_type: application/yaml

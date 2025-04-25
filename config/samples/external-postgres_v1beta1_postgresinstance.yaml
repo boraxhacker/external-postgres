@@ -1,0 +1,28 @@
+apiVersion: external-postgres.boraxhacker/v1beta1
+kind: PostgresInstance
+metadata:
+  labels:
+    app.kubernetes.io/name: external-postgres
+    app.kubernetes.io/managed-by: kustomize
+  name: postgresinstance-sample
+spec:
+  host:
+    valueFrom:
+      secretKeyRef:
+        name: postgres-endpoints
+        key: POSTGRES_PUBLIC_HOST
+  port:
+    valueFrom:
+      secretKeyRef:
+        name: postgres-endpoints
+        key: POSTGRES_PUBLIC_PORT
+  adminUserName:
+    valueFrom:
+      secretKeyRef:
+        name: postgres-creds
+        key: postgres-username
+  adminPassword:
+    valueFrom:
+      secretKeyRef:
+        name: postgres-creds
+        key: postgres-password
