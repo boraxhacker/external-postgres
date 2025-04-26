@@ -27,10 +27,9 @@ jobs:
           make build
           make build-installer
 
-          echo "artifact1_path=./bin/manager" >> $GITHUB_OUTPUT
-          echo "artifact1_name=external-postgres-controller-manager" >> $GITHUB_OUTPUT 
-          echo "artifact2_path=./dist/install.yaml" >> $GITHUB_OUTPUT
-          echo "artifact2_name=external-postgres.yaml" >> $GITHUB_OUTPUT 
+          mkdir release
+          cp bin/manager release/external-postgres-controller-manager
+          cp dist/install.yaml release/external-postgres.yaml
 
       - name: Log in to GitHub Container Registry
         uses: docker/login-action@v3
@@ -54,36 +53,11 @@ jobs:
       - name: Push Docker image to Container Registry
         run: docker push ${{ steps.docker_build.outputs.image_tag }}
 
-      - name: Create GitHub Release
-        id: create_release
-        uses: actions/create-release@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Release
+        uses: softprops/action-gh-release@v2
         with:
-          tag_name: ${{ github.ref_name }}
-          release_name: Release ${{ github.ref_name }}
           body: |
             Release based on tag ${{ github.ref_name }}.
             Docker Image: `${{ steps.docker_build.outputs.image_tag }}`
-          draft: false
-          prerelease: false
-
-      - name: Upload controller-manager Release Asset
-        uses: actions/upload-release-asset@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: ${{ steps.build.outputs.artifact1_path }}
-          asset_name: ${{ steps.build.outputs.artifact1_name }}
-          asset_content_type: application/octet-stream
-
-      - name: Upload external-postgres.yaml Release Asset
-        uses: actions/upload-release-asset@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: ${{ steps.build.outputs.artifact2_path }}
-          asset_name: ${{ steps.build.outputs.artifact2_name }}
-          asset_content_type: application/yaml
+          files: |
+            release/*
