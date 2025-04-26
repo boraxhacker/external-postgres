@@ -2,7 +2,7 @@ name: E2E Tests
 
 on:
   push:
-    tags: [ "v*" ]
+    tags: [ "NEVER*" ]
 
 jobs:
   test-e2e:

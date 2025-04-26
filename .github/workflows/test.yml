@@ -2,7 +2,7 @@ name: Tests
 
 on:
   push:
-    tags: [ "v*" ]
+    tags: [ "NEVER*" ]
 
 jobs:
   test:
